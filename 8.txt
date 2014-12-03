@@ -9,36 +9,54 @@ Library to be used:
 class SatImage
 {	
 	int spectral_res;//no. of bands
-	double spatial-res;//size of pixel
+	int r_size;// size of rows
+	int c_size;// size of coloumns
+
 	double srs;// spatial reference system
-	double extent[4];
+
 	Image Bands //gdal image object
 	
-	SatImage(inputfile)
-	{
-	/* read the input image and set coresponding varible of the class accordingly*/
-	
-	}
+   public void openImage(){
+   // Opens the images(given file path: "C://Java_project//", input image name:pan_subset.img) and displays:no. of bands, spatial reference and no. of rows and coloumns in the image.
+   
+   }
 
 }
 Class ImageFilter
 {
-	SatImage image;
-	ImageFilter(SatImage im)
-	{
-		image=im;		
-	}
-	ImageFilter(String imagefileAdd)
-	{
-		image= SatImage(imagefileAdd);
-	}
-	public SatImage edgeFilter(int band_no)
-	{
-		//method to apply edge filter to the particulr band of the  image. Also display and return the  output. 
+        Dataset Imagebands = gdal.Open("C://Java_project//pan_subset.img");
+        
+		  int r_size;//size of rows
+		  int c_size;//size of coloumns
+
+    
+                 int in_array_one[];// input array in one dimension.
+                 int[][] in_array;// input array converted into two dimensional
+                 int[][] out_array;// output 2d array
+                 int[] out_array_one;//output array converted into 1d
+                
+              
+	public void edgeEnhancement_Laplace()
+	{      
+	        
+		//method to apply Laplace edge enhancement to a panchromatic image. Also display and set spatial refernce to the output
+		// Given Output file path: "C://Java_project//"
+	
+		public void edgeDectector_Diagonal()
+	{     
+	       
+		//method to apply diagonal edge detector to a panchromatic image. Also display and set spatial refernce to the output
+		// Given Output file path: "C://Java_project//"
 	}
 	
+         	public void edgeDectector_Diagonal()
+	{       
+		
+		//method to apply Laplace edge enhancement to a panchromatic image. Also display and set spatial refernce to the output
+		// Given Output file path: "C://Java_project//"
+	}
 	
-	similarly do for other image filters
+
 }
 
 
