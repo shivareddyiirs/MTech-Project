@@ -1,0 +1,447 @@
+import java.util.*;
+/**
+ *
+ * @author group-7
+ */
+public class Test {
+
+    public static void main(String[] args) {
+        // call the read file method to read given input
+         Transform t=new Transform();
+         System.out.println("\n");
+         List<Coordinates> list_s=t.getSource("source.txt");
+         System.out.println("\n");
+         List<Coordinates> list_t=t.getTarget("target.txt");
+         
+         // pass these read lists of coordiantes as input to calculate parameters
+         t.getTransParameter(list_s,list_t);
+    }
+    
+}
+
+
+
+
+
+import java.util.*;
+/**
+ *
+ * @author group-7
+ */
+public class Transform {
+        double Rotation[][];
+	double Scale[];
+	double Translation[];
+	
+	public List<Coordinates> getSource(String fileAdd)
+	{
+		//get the source 3d cooridnates to varible read_s
+		ReadFile read_s=new ReadFile();
+                
+                // get all the objects of coordinates in to a list
+		List<Coordinates> crds_s=read_s.getData(fileAdd);
+                
+		return crds_s;	
+	}
+	public List<Coordinates> getTarget(String fileAdd)
+	{
+		//get the target 3d cooridnates to variable read_t
+		ReadFile read_t=new ReadFile();
+                
+                 // get all the objects of coordinates in to a list
+		List<Coordinates> crds_t=read_t.getData(fileAdd);
+                
+		return crds_t;		
+	}
+	
+	public void getTransParameter(List<Coordinates> crds_s,List<Coordinates> crds_t)
+	{
+		//function to calculate Covariance matrix for ratation matrix calculation
+                Covariance Cov=new Covariance();
+                
+		double[][] Cov_Matrix=Cov.getCov_Matrix(crds_s,crds_t);
+                
+		//svd algorithm to decompose covariance matrix
+		Svd s=new Svd();
+               Rotation= s.getRotation(Cov_Matrix);
+               
+               // calculate translation matrix with help of rotation matrix
+               Translation trans=new Translation();
+               Translation=trans.getTranslation(crds_s,crds_t,Rotation);
+               
+               // calculate scale matrix with help of coordiantes list 
+               Scale sc=new Scale();
+               Scale=sc.getScale(crds_s,crds_t);
+	}
+	
+}
+
+
+
+
+
+
+
+/**
+ *
+ * @author group 7
+ */
+public class Coordinates {
+     public double x;
+     public double y;
+     public double z;
+  
+  public Coordinates(){}
+  
+  public Coordinates(double x, double y, double z){
+    setX(x);
+    setY(y);
+    setZ(z);
+  }
+  
+  public void setX(double x){
+    this.x = x;
+  }
+  
+  public double getX(){
+    return x;
+  }
+  
+  public void setY(double y){
+    this.y = y;
+  }
+  
+  public double getY(){
+    return y;
+  }
+  
+  public void setZ(double z){
+    this.z = z;
+  }
+  
+  public double getZ(){
+    return z;
+  }
+}
+
+
+
+
+
+
+import java.util.*;
+/**
+ *
+ * @author group-7
+ */
+public class Centroid {
+ public double[] getCentroid(List<Coordinates> coordinates)
+{
+  double[] ret=new double[3];
+  
+  for(int i=0;i<coordinates.size();i++)
+   {
+       // for each value add to respective sum varaible
+     Coordinates crd=coordinates.get(i);    
+         ret[0]=ret[0]+crd.getX();
+	 ret[1]=ret[1]+crd.getY();
+	 ret[2]=ret[2]+crd.getZ();
+   }
+  
+  // divide with size to each coordiantes
+   ret[0]=ret[0]/coordinates.size();
+   ret[1]=ret[1]/coordinates.size();
+   ret[2]=ret[2]/coordinates.size();
+   
+   // return centroid coordinates
+   return ret;
+  }   
+}
+
+
+
+
+
+
+import java.util.*;
+import org.ejml.data.SimpleMatrix;
+/**
+ *
+ * @author group-7
+ */
+public class Covariance 
+{
+    double[][] source_cov=new double[3][3];
+    double[][] target_cov=new double[3][3];
+    double[][] CovMatrix=new double[3][3];
+    
+    public double[][] getCov_Matrix(List<Coordinates> list_s,List<Coordinates> list_t)
+   {
+       // calculate the centriod for source , target
+      Centroid centroid=new Centroid();
+      double[] centroid_s=centroid.getCentroid(list_s);
+      double[] centroid_t=centroid.getCentroid(list_t);
+    
+      // calculate variance deviation from centroid for each point 
+      for(int i=0;i<list_s.size();i++)
+      {
+       Coordinates crd_s=list_s.get(i);  
+        source_cov[i][0]=(crd_s.getX()-centroid_s[0])/list_t.size();
+	source_cov[i][1]=(crd_s.getY()-centroid_s[1])/list_t.size();
+	source_cov[i][2]=(crd_s.getZ()-centroid_s[2])/list_t.size();
+      }
+      
+      // calculate variance deviation from centroid for each point 
+      for(int i=0;i<list_t.size();i++)
+      {
+       Coordinates crd_t=list_t.get(i);  
+        target_cov[i][0]=(crd_t.getX()-centroid_t[0])/list_t.size();
+	target_cov[i][1]=(crd_t.getY()-centroid_t[1])/list_t.size();
+	target_cov[i][2]=(crd_t.getZ()-centroid_t[2])/list_t.size();
+      }
+      
+      // calculate transpose of target_cov_matrix
+      SimpleMatrix sm=new SimpleMatrix(target_cov);
+      SimpleMatrix target_cov_t=sm.transpose();
+      SimpleMatrix s=new SimpleMatrix(source_cov);
+      
+      // multiply resulting matrix to source _covariance_ matrix
+      SimpleMatrix Covariance=s.mult(target_cov_t);
+      
+      // convert covariance matrix object to double[][]
+       for(int i=0;i<3;i++)
+       {
+           for(int j=0;j<3;j++)
+           {
+               CovMatrix[i][j]=Covariance.get(i,j);
+           }
+       }
+      // return covaraince matrix
+   return CovMatrix;
+  }   
+}
+
+
+
+
+
+
+import java.io.*;
+import java.util.*;
+/**
+ *
+ * @author group-7
+ */
+public class ReadFile {
+    
+   public List<Coordinates> getData(String file)
+ {
+  String s="";
+  
+  // create a list array of class Coordinates objects
+  List<Coordinates> coordinates = new ArrayList<>();
+  
+  try{
+       // read line wise data
+  BufferedReader br=new BufferedReader(new FileReader(file));
+  
+  while((s=br.readLine())!=null)
+   {
+        // split data w.r.t "," 
+     String[] input=s.split(",");
+     
+     // add each Coordinates object to list array
+     coordinates.add(new Coordinates((double)Integer.parseInt(input[0]),(double)Integer.parseInt(input[1]),(double)Integer.parseInt(input[2]))); 
+   }
+   }
+   catch(IOException | NumberFormatException e){System.out.println("exception");}
+   return coordinates; 
+   } 
+}
+
+
+
+
+
+import java.io.PrintStream;
+import java.util.List;
+
+/**
+ *
+ * @author group-7
+ */
+public class Scale 
+{
+    double[] Scale=new double[3];
+    
+    public double[] getScale(List<Coordinates> list_s, List<Coordinates> list_t)
+    {
+        double ret[] =new double[3];
+        double ret1[] =new double[3];
+        
+        //calculate centroid of source and target
+        Centroid centroid=new Centroid();
+        double[] centroid_s=centroid.getCentroid(list_s);
+        double[] centroid_t=centroid.getCentroid(list_t);
+      
+             Coordinates crd=list_s.get(0);    
+             ret[0]=crd.getX();
+	     ret[1]=crd.getY();
+	     ret[2]=crd.getZ();
+             
+             Coordinates crd1=list_t.get(0);    
+             ret1[0]=crd1.getX();
+	     ret1[1]=crd1.getY();
+	     ret1[2]=crd1.getZ();
+           System.out.println( " \nScale matrix -> ");
+            double[] r={(centroid_s[0]-ret[0]),(centroid_s[1]-ret[1]),(centroid_s[2]-ret[2])};
+            double[] r1={(centroid_t[0]-ret1[0]),(centroid_t[1]-ret1[1]),(centroid_t[2]-ret1[2])};
+             for(int i=0;i<3;i++)
+            { 
+            Scale[i]=r1[i]/r[i]; 
+            System.out.printf("%5.2f",Scale[i]);
+            System.out.println("");
+            }
+        return Scale;
+    }
+    
+}
+
+
+
+
+
+
+import org.ejml.alg.dense.decomposition.SingularValueDecomposition;
+import org.ejml.data.DenseMatrix64F;
+import org.ejml.data.SimpleMatrix;
+import static org.ejml.data.SimpleMatrix.wrap;
+/**
+ *
+ * @author group-7
+ */
+ public class Svd 
+{
+     
+     public double[][] getRotation(double[][] Cov_Matrix)
+     {  
+       double[][] r=new double[3][3];  
+       
+       // print input covariance matrix
+       SimpleMatrix sm=new SimpleMatrix(Cov_Matrix);
+       System.out.print(" \n covariance matrix -> ");
+       sm.print();
+       
+       // apply svd decomposition algorithm
+       SingularValueDecomposition svd= sm.computeSVD();
+       
+       // get the decomposition matrixs u,v,w
+       DenseMatrix64F u=svd.getU();
+       SimpleMatrix u_wrap=wrap(u);
+       
+       // print u matrix
+       System.out.print(" \n u matrix -> ");
+       u_wrap.print();
+       
+       
+       DenseMatrix64F v=svd.getV();
+       SimpleMatrix v_wrap=wrap(v);
+       
+       // print v matrix 
+       System.out.print(" \n v matrix -> ");
+       v_wrap.print();
+       
+      // double[] w=svd.getW();
+       
+       // calculate v transpose
+       SimpleMatrix v_transpose=v_wrap.transpose();
+       System.out.print(" \n v_transpose matrix -> ");
+       
+       //print v matrix
+       v_transpose.print();
+       
+       // multiply  v_transpose to u to get rotation matrix
+       SimpleMatrix Rotation=v_transpose.mult(u_wrap);
+       System.out.print(" \n Rotation matrix : (v _transpose * u ) -> ");
+      
+       // print rotation matrix
+       Rotation.print();
+       
+       // convert rotation matrix to double[][]
+       for(int i=0;i<3;i++)
+       {
+           for(int j=0;j<3;j++)
+           {
+               r[i][j]=Rotation.get(i,j);
+           }
+       }
+       // return rotation matrix
+       return r;
+     }
+ }
+ 
+ 
+ 
+ 
+ 
+import java.util.*;
+import org.ejml.data.DenseMatrix64F;
+import org.ejml.data.SimpleMatrix;
+import static org.ejml.data.SimpleMatrix.wrap;
+/**
+ *
+ * @author group-7
+ */
+public class Translation 
+{
+    double[] Translation=new double[3]; 
+    
+    public double[] getTranslation(List<Coordinates> list_s, List<Coordinates> list_t, double[][] Rotation) 
+    {
+       //get centroids of source , target to centroid_s, centroid_t respectively
+        Centroid centroid=new Centroid();
+        double[] centroid_s=centroid.getCentroid(list_s);
+        double[] centroid_t=centroid.getCentroid(list_t);
+        
+        // multiply negative sign  to source centroid  to multiply it with rotation matrix
+          centroid_s[0]=-centroid_s[0];
+          centroid_s[1]=-centroid_s[1];
+          centroid_s[2]=-centroid_s[2];
+        
+        // converting double[] to  DenseMatrix object for matrix operations 
+        DenseMatrix64F centroid_s_Matrix=new DenseMatrix64F(3,1,centroid_s);
+        
+        // wrap DenseMatrix to SimpleMatrix for normal matrix operations
+        SimpleMatrix centroid_s_matrix=wrap(centroid_s_Matrix);
+        
+        // converting double[] to  DenseMatrix object for matrix operations 
+        DenseMatrix64F centroid_t_Matrix=new DenseMatrix64F(3,1,centroid_t);
+        
+         // wrap DenseMatrix to SimpleMatrix for normal matrix operations
+        SimpleMatrix centroid_t_matrix=wrap(centroid_t_Matrix);
+        
+         // converting double[][] to  DenseMatrix object for matrix operations 
+        DenseMatrix64F Rotation_Matrix=new DenseMatrix64F(Rotation);
+        
+         // wrap DenseMatrix to SimpleMatrix for normal matrix operations
+        SimpleMatrix rotation_matrix=wrap(Rotation_Matrix);
+        
+        // multiply   (-)centroid_source * rotation matrix
+        SimpleMatrix Trans_Matrix=rotation_matrix.mult(centroid_s_matrix);
+        
+        // calculate translation matrix by adding centroid_target to above result matrix
+        SimpleMatrix Translation_Matrix=Trans_Matrix.plus(centroid_t_matrix);
+        
+        // convert SimpleMatrix to double[]
+        for(int i=0;i<3;i++)
+         {
+          Translation[i]=Translation_Matrix.get(i);
+         }
+       System.out.print("\n translation matrix -> ");
+       Translation_Matrix.print(5,1);
+       
+       //returning Translation[] matrix
+        return Translation;
+    }
+    
+}
